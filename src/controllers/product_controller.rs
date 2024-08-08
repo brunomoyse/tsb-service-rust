@@ -1,4 +1,5 @@
 use crate::models::product::Product;
+use crate::redis_client::RedisClient;
 use accept_language::intersection_with_quality;
 use actix_web::{web, HttpRequest, HttpResponse, Responder};
 use diesel::r2d2::{self, ConnectionManager};
@@ -15,6 +16,7 @@ pub struct QueryParams {
 pub async fn translated_products_handler(
     req: HttpRequest,
     pool: web::Data<DbPool>,
+    redis_client: web::Data<RedisClient>,
     query_params: web::Query<QueryParams>,
 ) -> impl Responder {
     // Extract "Accept-Language" header
@@ -45,7 +47,7 @@ pub async fn translated_products_handler(
                 .json(json!({"error": "Error getting DB connection from pool"}))
         }
     };
-    match Product::get_products_grouped_by_category(&mut *connection, selected_language, search_query) {
+    match Product::get_products_grouped_by_category(&mut *connection, redis_client, selected_language, search_query) {
         Ok(products) => HttpResponse::Ok().json(products),
         Err(_) => HttpResponse::InternalServerError().finish(),
     }
