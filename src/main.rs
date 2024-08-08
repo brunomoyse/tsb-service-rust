@@ -4,6 +4,7 @@ pub mod schema;
 pub mod models;
 pub mod controllers;
 pub mod routes;
+pub mod redis_client;
 
 use actix_cors::Cors;
 use actix_web::{web, App, HttpServer, http::header};
@@ -26,6 +27,8 @@ async fn create_database_pool() -> DbPool {
 async fn main() -> std::io::Result<()> {
     dotenv().ok();
     let db_pool = create_database_pool().await;
+    let redis_client = redis_client::create_redis_client();
+
     let app_url: String = env::var("API_URL").expect("API_URL must be set");
 
     HttpServer::new(move || {
@@ -38,6 +41,7 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .wrap(cors)
             .app_data(web::Data::new(db_pool.clone()))
+            .app_data(web::Data::new(redis_client.clone()))
             .configure(routes::configure)
     })
         .bind(app_url)?
