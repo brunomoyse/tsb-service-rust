@@ -92,6 +92,7 @@ diesel::table! {
         email -> Text,
         email_verified_at -> Nullable<Timestamp>,
         password -> Text,
+        salt -> Text,
         remember_token -> Nullable<Text>,
     }
 }
