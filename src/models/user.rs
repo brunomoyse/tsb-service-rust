@@ -37,6 +37,13 @@ pub struct NewUser<'a> {
     pub salt: &'a str,
 }
 
+#[derive(Deserialize)]
+
+pub struct UserConnectionForm {
+    pub email: String,
+    pub password: String,
+}
+
 impl User {
     pub fn find_all(connection: &mut PgConnection) -> Result<Vec<User>, diesel::result::Error> {
         use crate::schema::users::dsl::*;
