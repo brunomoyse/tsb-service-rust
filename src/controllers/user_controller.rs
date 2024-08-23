@@ -1,10 +1,10 @@
 use actix_web::{web, HttpResponse};
 use diesel::r2d2::{self, ConnectionManager};
-use diesel::PgConnection;
+use diesel::{PgConnection, QueryDsl};
 use diesel::RunQueryDsl;
-use crate::schema::users::dsl::*; // Import the `users` table under the `dsl` module
-use diesel::insert_into;
-use crate::models::user::{User, UserForm, NewUser};
+use crate::schema::users::dsl::*;  // Import the DSL for the users table
+use diesel::prelude::*; use diesel::insert_into;
+use crate::models::user::{User, UserForm, NewUser, UserConnectionForm};
 
 use serde_json::json;
 use argon2::{
@@ -64,5 +64,42 @@ pub async fn sign_up(pool: web::Data<DbPool>, user: web::Json<UserForm>) -> Http
     match insert_into(users).values(&new_user).execute(&mut connection) {
         Ok(_) => HttpResponse::Ok().json(json!({"message": "User created successfully"})),
         Err(_) => HttpResponse::InternalServerError().json(json!({"error": "Error inserting user into the database"})),
+    }
+}
+
+pub async fn sign_in(pool: web::Data<DbPool>, connection_form: web::Json<UserConnectionForm>) -> HttpResponse {
+    // Get a database connection from the pool
+    let connection_result = pool.get();
+
+    let mut connection = match connection_result {
+        Ok(conn) => conn,
+        Err(_) => return HttpResponse::InternalServerError().json(json!({"error": "Error getting DB connection from pool"})),
+    };
+
+    // Find the user by email
+    let found_user_result = users
+        .filter(email.eq(&connection_form.email))  // Correctly use the `email` column in the query
+        .first::<User>(&mut connection);
+
+    let found_user = match found_user_result {
+        Ok(user) => user,
+        Err(_) => return HttpResponse::Unauthorized().json(json!({"error": "Invalid email or password"})),
+    };
+
+    // Parse the stored password hash
+    let parsed_hash = match PasswordHash::new(&found_user.password) {
+        Ok(hash) => hash,
+        Err(_) => return HttpResponse::InternalServerError().json(json!({"error": "Invalid password hash format"})),
+    };
+
+    // Verify the password using Argon2
+    let password_verification = Argon2::default().verify_password(
+        connection_form.password.as_bytes(),
+        &parsed_hash,
+    );
+
+    match password_verification {
+        Ok(_) => HttpResponse::Ok().json(json!({"message": "Sign in successful"})),
+        Err(_) => HttpResponse::Unauthorized().json(json!({"error": "Invalid email or password"})),
     }
 }
