@@ -1,6 +1,7 @@
 extern crate diesel;
 
 pub mod schema;
+pub mod middlewares;
 pub mod models;
 pub mod controllers;
 pub mod routes;

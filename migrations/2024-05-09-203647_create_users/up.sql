@@ -8,7 +8,8 @@ CREATE TABLE IF NOT EXISTS public.users
     name TEXT NOT NULL,
     email TEXT NOT NULL,
     email_verified_at timestamp(0) without time zone,
-    password TEXT NOT NULL,
+    password_hash TEXT NOT NULL,
+    salt TEXT NOT NULL,
     remember_token TEXT,
 
     CONSTRAINT users_pkey PRIMARY KEY (id),
