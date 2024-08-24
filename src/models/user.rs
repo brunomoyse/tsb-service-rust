@@ -6,6 +6,7 @@ use crate::schema::users;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use chrono::NaiveDateTime;
+use std::env;
 
 #[derive(Serialize, Deserialize, Queryable, Identifiable, Debug, Clone)]
 #[diesel(table_name = users)]
@@ -44,6 +45,12 @@ pub struct UserConnectionForm {
     pub password: String,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Claims {
+    pub sub: String,  // subject (the user's email in this case)
+    pub exp: usize,   // expiration time as a UNIX timestamp
+}
+
 impl User {
     pub fn find_all(connection: &mut PgConnection) -> Result<Vec<User>, diesel::result::Error> {
         use crate::schema::users::dsl::*;
@@ -54,5 +61,10 @@ impl User {
         Ok(results)
     }
 }
+
+pub fn get_secret_key() -> String {
+    env::var("JWT_SECRET").expect("JWT_SECRET must be set")
+}
+
 
 
