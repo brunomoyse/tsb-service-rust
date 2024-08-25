@@ -12,6 +12,7 @@ use diesel::r2d2::{self, ConnectionManager};
 use diesel::PgConnection;
 use dotenv::dotenv;
 use std::env;
+use std::process;
 
 type DbPool = r2d2::Pool<ConnectionManager<PgConnection>>;
 
@@ -26,6 +27,23 @@ async fn create_database_pool() -> DbPool {
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     dotenv().ok();
+
+    // List of required environment variables
+    let required_vars = vec![
+        "JWT_SECRET",
+        "MOLLIE_API_KEY",
+        "MOLLIE_PARTNER_ID",
+        "MOLLIE_PROFILE_ID",
+    ];
+
+    // Check each environment variable
+    for var in required_vars {
+        if env::var(var).is_err() {
+            eprintln!("Error: {} environment variable is not set.", var);
+            process::exit(1); // Exit with a non-zero status to cause a build failure
+        }
+    }
+
     let db_pool = create_database_pool().await;
     let app_url: String = env::var("API_URL").expect("API_URL must be set");
 
