@@ -146,7 +146,7 @@ pub async fn sign_in(pool: web::Data<DbPool>, connection_form: web::Json<UserCon
     let refresh_token = match encode(
         &Header::default(),
         &refresh_claims,
-        &EncodingKey::from_secret(secret_key.as_ref()),  // Replace with your secret key
+        &EncodingKey::from_secret(secret_key.as_ref()),
     ) {
         Ok(t) => t,
         Err(_) => return HttpResponse::InternalServerError().json(json!({"error": "Refresh token creation error"})),
