@@ -5,6 +5,7 @@ use uuid::Uuid;
 use std::error::Error;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use rust_decimal::Decimal;
 use crate::schema::{product_categories, product_category_translations, product_product_category, product_translations, products};
 
 #[derive(Serialize, Deserialize, Queryable, Selectable)]
@@ -13,7 +14,7 @@ pub struct Product {
     pub id: Uuid,
     pub created_at: Option<NaiveDateTime>,
     pub updated_at: Option<NaiveDateTime>,
-    pub price: Option<f64>,
+    pub price: Decimal,
     pub is_active: bool,
     pub code: Option<String>,
     pub slug: Option<String>
@@ -47,6 +48,15 @@ pub struct CategoryWithProducts {
     pub name: String,
     pub order: Option<i32>,
     pub products: Vec<ProductInfo>,
+}
+
+pub fn get_product_name_by_id(conn: &mut PgConnection, product_id: Uuid, locale: &str) -> Result<String, Box<dyn Error + Send + Sync>> {
+    let product_name = product_translations::table
+        .filter(product_translations::product_id.eq(product_id))
+        .filter(product_translations::locale.eq(locale))
+        .select(product_translations::name)
+        .first::<String>(conn)?;
+    Ok(product_name)
 }
 
 impl Product {
